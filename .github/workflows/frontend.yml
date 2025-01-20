@@ -1,54 +1,66 @@
-# 트리거 : PUSH, PR(pull request) 이벤트 발생시 작동, 브런치는 main(없으면 master)
+name: React CI/CD
+
+# 트리거 : PUSH, PR(pull request) 이벤트 발생시 작동, 브런치는 main(없으면  master)
 # 만약, 프런트, 백엔드 통합 => 특정 디렉토리가 업데이트 될때 반영해라 등 세부 조건 추가 가능
 on:
-    push:
-      branches:
-        - main
-    pull_request:
-      branches:
-       - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
+# 해야할일
 jobs:
-    react-deploy:
-        runs-on: ubuntu-latest
-        steps:
-          - name: Checkout repository resoures
-            uses: actions/checkout@v2
-          - name: .env 환경 변수 동적 생성
-            run: |
-                echo "${{secrets.CLIENT_ENV}}" > .env
-                pwd
-                ls -al
-            # 빌드를 위한 조건 -> nodejs 설치
-  # uses: actions/setup-node@v2
-          - name: nodejs 설치
-            uses: actions/setup-node@v2
-            with:
-             node-version: '22'
+  react-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 체크아웃 -> github의 저장소로부터 소스 체크아웃
+      - name: Checkout repository resource
+        uses: actions/checkout@v2
 
-  # npm install 라이브러리 설치 -> node_modules 생성
-  # run: npm install
-          - name: install 독립 라이브러리
-            run: npm install
+      # 환경변수 동적 생성 -> .env 파일 생성(ec2 정보 세팅), 기존코드 수정(보안)
+      - name: .env 환경 변수 동적 생성
+        run: |
+          echo "${{ secrets.CLIENT_ENV }}" > .env
+          pwd
+          ls -al
 
-            # 빌드
-            # run: npm run build
-          - name: 빌드
-            run: | 
-             npm run build
-              ls ./build
 
-            # 빌드의 결과물을 ec2 업로드
-  # 대상 : ./build/*
-  # 타겟 : /home/ubuntu/client
-  # 대상위치에 존재하는 모든 리소스->ec2의 ~/client 하위에 복사해둬라
-          - name: EC2에 빌드된 파일/폴더들 업로드
-            uses: appleboy/scp-action@v0.1.7
-            with:
-            host: ${{ secrets.EC2_HOST }}
-            username: ${{ secrets.EC2_USER }}
-            key: ${{ secrets.EC2_KEY }}
-            source: ./build/*
-            target: /home/ubuntu/client
+      # 빌드를 위한 조건 -> nodejs 설치
+      # uses: actions/setup-node@v2
+      - name: nodejs 설치
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
 
-            
+      # npm install 라이브러리 설치 -> node_modules  생성
+      # run: npm install
+      - name: install 독립 라이브러리
+        run: npm install
+
+      # 단위 테스트 -> 생략
+      #- name: 단위테스트
+      #  run: npm test
+
+      # 빌드
+      # run: npm run build
+      - name: 빌드
+        run: |
+          npm run build
+          ls ./build
+
+      # 빌드의 결과물을 ec2 업로드
+      # 대상 : ./build/*
+      # 타겟 : /home/ubuntu/client
+      # 대상위치에 존재하는 모든 리소스->ec2의 ~/client 하위에 복사해둬라
+      - name: EC2에 빌드된 파일/폴더들 업로드
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: ./build/*
+          target: /home/ubuntu/client
+
+      # 뒷정리 (업로드 결과 -> nginx의  root로 이동(설정), 디렉토리 정리)
