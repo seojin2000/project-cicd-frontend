@@ -39,15 +39,16 @@ jobs:
               ls ./build
 
             # 빌드의 결과물을 ec2 업로드
-            # 대상 : ./build/*
-            # 타겟 : /home/ubuntu/client
-          - name: EC2에 빌드된 파일 업로드
-            uses: appleboy/scp-action@0.1.7
+  # 대상 : ./build/*
+  # 타겟 : /home/ubuntu/client
+  # 대상위치에 존재하는 모든 리소스->ec2의 ~/client 하위에 복사해둬라
+          - name: EC2에 빌드된 파일/폴더들 업로드
+            uses: appleboy/scp-action@v0.1.7
             with:
-              host: ${{ secrets.EC2_HOST }}
-              username: ${{ secrets.EC2_USER }}
-              key: ${{ secrets.EC2_KEY }}
-              source: ./build/*
-              target: /home/ubuntu/client
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USER }}
+            key: ${{ secrets.EC2_KEY }}
+            source: ./build/*
+            target: /home/ubuntu/client
 
             
